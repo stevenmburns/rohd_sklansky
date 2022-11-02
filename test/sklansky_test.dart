@@ -10,8 +10,8 @@ void main() {
     test('tree', () async {
 
       const lg_n = 3;
-      //const n = 1 << lg_n;
-      const n = 12;
+      const n = 1 << lg_n;
+      //const n = 12;
       final mod = Sklansky(
           List<Logic>.generate(n, (index) => Logic(width: 1)),
           (a, b) => a | b);

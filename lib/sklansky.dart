@@ -22,7 +22,7 @@ class Sklansky extends Module {
     if (_iseq.length == 1) {
       _oseq[0] <= _iseq[0];
     } else {
-      final m = (_iseq.length + 1) ~/ 2;
+      final m = _iseq.length ~/ 2;
       final n = _iseq.length;
       final u = Sklansky(_iseq.getRange(0, m).toList(), _op).val;
       final v = Sklansky(_iseq.getRange(m, n).toList(), _op).val;
