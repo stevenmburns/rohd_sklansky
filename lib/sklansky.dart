@@ -32,18 +32,3 @@ class Sklansky extends Module {
   }
 }
 
-class PriorityEncoder extends Module {
-  final List<Logic> _iseq = [];
-  final Logic out;
-  Logic get val => out;
-
-  PriorityEncoder(Logic i) {
-    for (var k=0; k<i.width; ++k) {
-      _iseq.add(Logic(width: 1));
-      _iseq[k] <= ((1<<k)&j) ? 1 : 0;
-    }
-    final u = Sklansky(_iseq, (a, b) => a | b );
-    for (var k=0; k<i.width; ++k) {
-    }
-  }
-}
