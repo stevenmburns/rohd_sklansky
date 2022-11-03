@@ -4,11 +4,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
     container:
-      image: stevenmburns/dart-and-iverilog/bin:latest
+      image: stevenmburns/dart-and-iverilog:latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Run tests
         run: |
-          export PATH=/icarus_install:$PATH
+          export PATH=/icarus_install/bin:$PATH
           dart test
