@@ -31,7 +31,7 @@ void main() {
       }
 
       for (var j=0; j < (1<<n); ++j) {
-        vectors.add(Vector({ 'inp': j}, {'out': 1+compute_or_scan(j)}));
+        vectors.add(Vector({ 'inp': j}, {'out': compute_or_scan(j)}));
       }
 
       await SimCompare.checkFunctionalVector(mod, vectors);
