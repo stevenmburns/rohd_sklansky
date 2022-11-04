@@ -1,2 +1,4 @@
-A sample command-line application with an entrypoint in `bin/`, library code
-in `lib/`, and example unit test in `test/`.
+# Example ROHD-based Generator
+
+Build up parallel-prefix circuits using this ROHD-based generator
+
