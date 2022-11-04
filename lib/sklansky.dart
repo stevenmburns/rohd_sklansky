@@ -32,3 +32,16 @@ class Sklansky extends Module {
   }
 }
 
+class OrScan extends Module {
+
+  OrScan(Logic inp) {
+    final List<Logic> _iseq = [];
+    addInput( 'inp', inp, width: inp.width);
+    final out = addOutput( 'out', width: inp.width);
+    for (var i=0; i<inp.width; ++i) {
+      _iseq.add(inp[i]);
+    }
+    final u = Sklansky(_iseq, (a, b) => a | b);
+    out <= u.val.swizzle();
+  }
+}
