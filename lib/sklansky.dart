@@ -19,11 +19,19 @@ class Sklansky extends Module {
       _oseq.add(addOutput('o$i', width: el.width));
     });
 
+    int largest_pow2_less_than(x) {
+      var y = 1;
+      while (2*y < x) {
+        y *= 2;
+      }
+      return y;
+    }
+
     if (_iseq.length == 1) {
       _oseq[0] <= _iseq[0];
     } else {
-      final m = _iseq.length ~/ 2;
       final n = _iseq.length;
+      final m = largest_pow2_less_than(n);
       final u = Sklansky(_iseq.getRange(0, m).toList(), _op).val;
       final v = Sklansky(_iseq.getRange(m, n).toList(), _op).val;
       u.forEachIndexed((i, el) { _oseq[i] <= el; });
@@ -32,3 +40,11 @@ class Sklansky extends Module {
   }
 }
 
+class OrScan extends Module {
+  Logic get out => output('out');
+  OrScan(Logic inp) {
+    inp = addInput('inp', inp, width: inp.width);
+    final u = Sklansky(List<Logic>.generate(inp.width, (i) => inp[i]), (a, b) => a | b);
+    addOutput('out', width: inp.width) <= u.val.rswizzle();
+  }
+}

@@ -14,8 +14,8 @@ import 'package:rohd/rohd.dart';
 import 'package:sklansky/sklansky.dart';
 
 Future<void> main({bool noPrint = false}) async {
-  final List<Logic> inps = List<Logic>.generate(16, (index) => Logic(width: 1));
-  final tree = Sklansky(inps, (a, b) => a | b);
+  final Logic inp = Logic(name: 'inp', width: 9);
+  final tree = OrScan(inp);
   await tree.build();
   final generatedSystemVerilog = tree.generateSynth();
   if (!noPrint) {
