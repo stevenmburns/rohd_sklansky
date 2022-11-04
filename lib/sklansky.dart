@@ -19,7 +19,7 @@ class Sklansky extends Module {
       _oseq.add(addOutput('o$i', width: el.width));
     });
 
-    int largest_pow2_less_than(x) {
+    int largestPow2LessThan(x) {
       var y = 1;
       while (2*y < x) {
         y *= 2;
@@ -31,7 +31,7 @@ class Sklansky extends Module {
       _oseq[0] <= _iseq[0];
     } else {
       final n = _iseq.length;
-      final m = largest_pow2_less_than(n);
+      final m = largestPow2LessThan(n);
       final u = Sklansky(_iseq.getRange(0, m).toList(), _op).val;
       final v = Sklansky(_iseq.getRange(m, n).toList(), _op).val;
       u.forEachIndexed((i, el) { _oseq[i] <= el; });
