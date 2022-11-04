@@ -7,47 +7,38 @@ void main() {
   tearDown(Simulator.reset);
 
   group('simcompare', () {
-    test('tree', () async {
+    test('sklansky', () async {
 
       const lg_n = 3;
       const n = 1 << lg_n;
       //const n = 12;
-      final mod = Sklansky(
-          List<Logic>.generate(n, (index) => Logic(width: 1)),
-          (a, b) => a | b);
+      var inp = Logic(name: 'inp', width: n);
+      final mod = OrScan(inp);
       await mod.build();
 
       final List<Vector> vectors = [];
 
-      int compute_or_scan(i, j) {
-        for (var k=0; k <= i; ++k) {
-          if ((k&j) != 0) {
-            return 1;
+      int compute_or_scan(j) {
+        var result = 0;
+        var found = false;
+        for (var i=0; i<n; ++i) {
+          if (found || ((1<<i) & j) != 0) {
+            result |= 1<<i;
+            found = true;
           }
         }
-        return 0;
+        return result;
       }
 
       for (var j=0; j < (1<<n); ++j) {
-        vectors.add(Vector({
-          for (var i in List<int>.generate(n, (index) => index)) 'i$i': ((i&j)!=0)?1:0
-        },
-        {
-          for (var i in List<int>.generate(n, (index) => index)) 'o$i': compute_or_scan(i, j)
-        }));
+        vectors.add(Vector({ 'inp': j}, {'out': 1+compute_or_scan(j)}));
       }
 
       await SimCompare.checkFunctionalVector(mod, vectors);
       final simResult = SimCompare.iverilogVector(
-          mod.generateSynth(), '${mod.runtimeType}_${lg_n-1}', vectors,
+          mod.generateSynth(), '${mod.runtimeType}', vectors,
           signalToWidthMap: {
-            ...{
-              for (var i in List<int>.generate(n, (index) => index)) 'i$i': 1
-            },
-            ...{
-              for (var i in List<int>.generate(n, (index) => index)) 'o$i': 1
-            }
-
+            ...{ 'inp': n, 'out': n}
           });
       expect(simResult, equals(true));
     });
