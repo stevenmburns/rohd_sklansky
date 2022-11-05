@@ -6,6 +6,13 @@ import 'package:test/test.dart';
 void main() {
   tearDown(Simulator.reset);
 
+
+  group('largest_pow2_less_than', () {
+    test('largest_pow2_less_than', () async {
+      expect(largestPow2LessThan(5), equals(4));
+    });
+  });
+
   group('or_scan', () {
     test('or_scan', () async {
       const n = 9;
