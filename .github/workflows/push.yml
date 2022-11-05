@@ -4,7 +4,7 @@ on:
     branches:
       - 'main'
   pull_request:
-    types: [opened, synchronized, closed]
+    types: [opened, synchronized, closed, edited]
 
 
 jobs:
