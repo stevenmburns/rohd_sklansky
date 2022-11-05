@@ -40,7 +40,7 @@ void main() {
 
       // SimCompare testing
       final List<Vector> vectors = List<Vector>.generate(1<<n, (j) =>
-        Vector({ 'inp': j}, {'out': computeOrScan(j)});
+        Vector({ 'inp': j}, {'out': computeOrScan(j)})
       );
 
       await SimCompare.checkFunctionalVector(mod, vectors);
