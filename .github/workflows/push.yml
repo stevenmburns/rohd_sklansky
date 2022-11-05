@@ -1,5 +1,12 @@
 name: Workflow Triggered by Push
-on: push
+on: 
+  push:
+    branches:
+      - 'main'
+  pull_request:
+    types: [opened, synchronized, closed]
+
+
 jobs:
   test:
     runs-on: ubuntu-latest

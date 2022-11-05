@@ -48,3 +48,12 @@ class OrScan extends Module {
     addOutput('out', width: inp.width) <= u.val.rswizzle();
   }
 }
+
+class PriorityEncoder extends Module {
+  Logic get out => output('out');
+  PriorityEncoder(Logic inp) {
+    inp = addInput('inp', inp, width: inp.width);
+    final u = OrScan(inp);
+    addOutput('out', width: inp.width) <= (u.out & ~(u.out << Const(1)));
+  }
+}

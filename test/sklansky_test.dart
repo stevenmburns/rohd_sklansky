@@ -6,14 +6,13 @@ import 'package:test/test.dart';
 void main() {
   tearDown(Simulator.reset);
 
-  group('simcompare', () {
-    test('sklansky', () async {
+  group('or_scan', () {
+    test('or_scan', () async {
       const n = 9;
       var inp = Logic(name: 'inp', width: n);
       final mod = OrScan(inp);
       await mod.build();
 
-      final List<Vector> vectors = [];
 
       int computeOrScan(j) {
         var result = 0;
@@ -40,10 +39,9 @@ void main() {
       }
 
       // SimCompare testing
-
-      for (var j=0; j < (1<<n); ++j) {
-        vectors.add(Vector({ 'inp': j}, {'out': computeOrScan(j)}));
-      }
+      final List<Vector> vectors = List<Vector>.generate(1<<n, (j) =>
+        Vector({ 'inp': j}, {'out': computeOrScan(j)});
+      );
 
       await SimCompare.checkFunctionalVector(mod, vectors);
       
@@ -53,6 +51,35 @@ void main() {
           dontDeleteTmpFiles: true
       );
       expect(simResult, equals(true));
+
+    });
+  });
+
+  group('priority_encoder', () {
+    test('priority_encoder', () async {
+      const n = 15;
+      var inp = Logic(name: 'inp', width: n);
+      final mod = PriorityEncoder(inp);
+      await mod.build();
+
+      int computePriorityEncoding(j) {
+        for (var i=0; i<n; ++i) {
+          if (((1<<i) & j) != 0) {
+            return 1<<i;
+          }
+        }
+        return 0;
+      }
+
+      // put/expect testing
+
+      for (var j=0; j < (1<<n); ++j) {
+        final golden = computePriorityEncoding(j);
+        inp.put(j);
+        final result = mod.out.value.toInt();
+        // print("priority_encoder: $j ${result} ${golden}");
+        expect(result, equals(golden));
+      }
 
     });
   });
