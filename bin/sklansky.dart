@@ -15,7 +15,7 @@ import 'package:sklansky/sklansky.dart';
 
 Future<void> main({bool noPrint = false}) async {
   final Logic inp = Logic(name: 'inp', width: 9);
-  final tree = PriorityEncoder(inp);
+  final tree = PriorityEncoderSklansky(inp);
   await tree.build();
   final generatedSystemVerilog = tree.generateSynth();
   if (!noPrint) {

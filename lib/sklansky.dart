@@ -9,55 +9,101 @@ int largestPow2LessThan(x) {
   return y;
 }
 
-class Sklansky extends Module {
-  final Logic Function(Logic a, Logic b) _op;
-  final List<Logic> _iseq = [];
+class ParallelPrefix extends Module {
   final List<Logic> _oseq = [];
-
   List<Logic> get val => _oseq;
 
-  Sklansky(List<Logic> inps, this._op) : super(name: 'sklansky') {
+  ParallelPrefix(List<Logic> inps, name): super(name: name)  {
     if (inps.isEmpty) {
-      throw Exception("Don't use Sklansky with an empty sequence");
+      throw Exception("Don't use {name} with an empty sequence");
     }
+  }
+}
+
+class Ripple extends ParallelPrefix {
+  Ripple(List<Logic> inps, op) : super(inps, 'ripple') {
+    final List<Logic> iseq = [];
 
     inps.forEachIndexed((i, el) {
-      _iseq.add(addInput('i$i', el, width: el.width));
+      iseq.add(addInput('i$i', el, width: el.width));
       _oseq.add(addOutput('o$i', width: el.width));
     });
 
-    if (_iseq.length == 1) {
-      _oseq[0] <= _iseq[0];
+    for (var i=0; i<iseq.length; ++i) {
+      if (i == 0) {
+        _oseq[i] <= iseq[i];
+      } else {
+        _oseq[i] <= op(_oseq[i-1], iseq[i]);
+      }
+
+    }
+  }
+}
+
+class Sklansky extends ParallelPrefix {
+  Sklansky(List<Logic> inps, op) : super(inps, 'sklansky') {
+    final List<Logic> iseq = [];
+
+    inps.forEachIndexed((i, el) {
+      iseq.add(addInput('i$i', el, width: el.width));
+      _oseq.add(addOutput('o$i', width: el.width));
+    });
+
+    if (iseq.length == 1) {
+      _oseq[0] <= iseq[0];
     } else {
-      final n = _iseq.length;
+      final n = iseq.length;
       final m = largestPow2LessThan(n);
-      final u = Sklansky(_iseq.getRange(0, m).toList(), _op).val;
-      final v = Sklansky(_iseq.getRange(m, n).toList(), _op).val;
+      final u = Sklansky(iseq.getRange(0, m).toList(), op).val;
+      final v = Sklansky(iseq.getRange(m, n).toList(), op).val;
       u.forEachIndexed((i, el) {
         _oseq[i] <= el;
       });
       v.forEachIndexed((i, el) {
-        _oseq[m + i] <= _op(u[m - 1], el);
+        _oseq[m + i] <= op(u[m - 1], el);
       });
     }
   }
 }
 
-class OrScan extends Module {
+class OrScanRipple extends Module {
   Logic get out => output('out');
-  OrScan(Logic inp) {
+  OrScanRipple(Logic inp) {
     inp = addInput('inp', inp, width: inp.width);
-    final u = Sklansky(
-        List<Logic>.generate(inp.width, (i) => inp[i]), (a, b) => a | b);
+    final u = Ripple(
+        List<Logic>.generate(inp.width, (i) => inp[i]),
+        (a, b) => a | b
+    );
     addOutput('out', width: inp.width) <= u.val.rswizzle();
   }
 }
 
-class PriorityEncoder extends Module {
+class PriorityEncoderRipple extends Module {
   Logic get out => output('out');
-  PriorityEncoder(Logic inp) {
+  PriorityEncoderRipple(Logic inp) {
     inp = addInput('inp', inp, width: inp.width);
-    final u = OrScan(inp);
+    final u = OrScanRipple(inp);
+    addOutput('out', width: inp.width) <= (u.out & ~(u.out << Const(1)));
+  }
+}
+
+class OrScanSklansky extends Module {
+  Logic get out => output('out');
+  OrScanSklansky(Logic inp) {
+    inp = addInput('inp', inp, width: inp.width);
+    final u = Sklansky(
+        List<Logic>.generate(inp.width, (i) => inp[i]),
+        (a, b) => a | b
+    );
+    addOutput('out', width: inp.width) <= u.val.rswizzle();
+  }
+}
+
+class PriorityEncoderSklansky extends Module {
+  Logic get out => output('out');
+  PriorityEncoderSklansky(Logic inp) {
+    inp = addInput('inp', inp, width: inp.width);
+    final u = OrScanSklansky(inp);
     addOutput('out', width: inp.width) <= (u.out & ~(u.out << Const(1)));
   }
 }

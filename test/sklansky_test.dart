@@ -19,7 +19,7 @@ void main() {
     test('or_scan', () async {
       const n = 9;
       var inp = Logic(name: 'inp', width: n);
-      final mod = OrScan(inp);
+      final mod = OrScanRipple(inp);
       await mod.build();
 
 
@@ -68,7 +68,7 @@ void main() {
     test('priority_encoder', () async {
       const n = 15;
       var inp = Logic(name: 'inp', width: n);
-      final mod = PriorityEncoder(inp);
+      final mod = PriorityEncoderSklansky(inp);
       await mod.build();
 
       int computePriorityEncoding(j) {
