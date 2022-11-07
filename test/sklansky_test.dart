@@ -24,8 +24,6 @@ void testOrScan(int n, fn) {
         return result;
       }
 
-      WaveDumper(mod);
-
       // put/expect testing
 
       for (var j=0; j < (1<<n); ++j) {
@@ -35,6 +33,9 @@ void testOrScan(int n, fn) {
         //print("$j ${result} ${golden}");
         expect(result, equals(golden));
       }
+
+      /*
+      WaveDumper(mod);
 
       // SimCompare testing
       final List<Vector> vectors = List<Vector>.generate(1<<n, (j) =>
@@ -49,6 +50,7 @@ void testOrScan(int n, fn) {
           dontDeleteTmpFiles: true
       );
       expect(simResult, equals(true));
+      */
 
     });
 }
@@ -82,6 +84,34 @@ void testPriorityEncoder(int n, fn) {
     });
 }
 
+void testAdder(int n, fn) {
+    test('adder_$n', () async {
+      var a = Logic(name: 'a', width: n);
+      var b = Logic(name: 'b', width: n);
+
+      final mod = fn(a, b);
+      await mod.build();
+
+      int computeAdder(aa, bb) {
+        return (aa + bb) & ((1<<n)-1);
+      }
+
+      // put/expect testing
+
+      for (var aa=0; aa < (1<<n); ++aa) {
+        for (var bb=0; bb < (1<<n); ++bb) {
+
+          final golden = computeAdder(aa, bb);
+          a.put(aa);
+          b.put(bb);
+          final result = mod.out.value.toInt();
+          //print("adder: $aa $bb $result $golden");
+          expect(result, equals(golden));
+        }
+      }
+    }); 
+}
+
 void main() {
   tearDown(Simulator.reset);
 
@@ -95,17 +125,26 @@ void main() {
   });
 
   group('or_scan', () {
-    testOrScan(9, (inp) => OrScan(inp, Ripple.new));
-    testOrScan(7, (inp) => OrScan(inp, Ripple.new));
-    testOrScan(8, (inp) => OrScan(inp, Ripple.new));
-
-    testOrScan(9, (inp) => OrScan(inp, Sklansky.new));
-    testOrScan(7, (inp) => OrScan(inp, Sklansky.new));
-    testOrScan(8, (inp) => OrScan(inp, Sklansky.new));
+    for (var n in [7,8,9]) {
+      for (var ppGen in [Ripple.new, Sklansky.new]) {
+        testOrScan(n, (inp) => OrScan(inp, ppGen));
+      }
+    }
   });
 
   group('priority_encoder', () {
-    testPriorityEncoder(15, (inp) => PriorityEncoder(inp, Ripple.new));
-    testPriorityEncoder(15, (inp) => PriorityEncoder(inp, Sklansky.new));
+    for (var n in [7,8,9]) {
+      for (var ppGen in [Ripple.new, Sklansky.new]) {
+        testPriorityEncoder(n, (inp) => PriorityEncoder(inp, ppGen));
+      }
+    }
+  });
+
+  group('adder', () {
+    for (var n in [3,4,5]) {
+      for (var ppGen in [Ripple.new, Sklansky.new]) {
+        testAdder(n, (a, b) => Adder(a, b, ppGen));
+      }
+    }
   });
 }

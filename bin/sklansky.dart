@@ -14,10 +14,12 @@ import 'package:rohd/rohd.dart';
 import 'package:sklansky/sklansky.dart';
 
 Future<void> main({bool noPrint = false}) async {
-  final Logic inp = Logic(name: 'inp', width: 9);
-  final tree = PriorityEncoder(inp, Sklansky.new);
-  await tree.build();
-  final generatedSystemVerilog = tree.generateSynth();
+  final Logic a = Logic(name: 'a', width: 9);
+  final Logic b = Logic(name: 'b', width: 9);
+
+  final block = Adder(a, b, Sklansky.new);
+  await block.build();
+  final generatedSystemVerilog = block.generateSynth();
   if (!noPrint) {
     print(generatedSystemVerilog);
   }
