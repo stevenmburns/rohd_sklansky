@@ -3,14 +3,12 @@ import 'package:rohd/rohd.dart';
 import 'package:rohd/src/utilities/simcompare.dart';
 import 'package:test/test.dart';
 
-void main() {
-  tearDown(Simulator.reset);
 
-  group('or_scan', () {
-    test('or_scan', () async {
-      const n = 9;
+void testOrScan(int n, fn) {
+
+    test('or_scan_$n', () async {
       var inp = Logic(name: 'inp', width: n);
-      final mod = OrScan(inp);
+      final mod = fn(inp);
       await mod.build();
 
 
@@ -26,8 +24,6 @@ void main() {
         return result;
       }
 
-      WaveDumper(mod);
-
       // put/expect testing
 
       for (var j=0; j < (1<<n); ++j) {
@@ -37,6 +33,9 @@ void main() {
         //print("$j ${result} ${golden}");
         expect(result, equals(golden));
       }
+
+      /*
+      WaveDumper(mod);
 
       // SimCompare testing
       final List<Vector> vectors = List<Vector>.generate(1<<n, (j) =>
@@ -51,15 +50,16 @@ void main() {
           dontDeleteTmpFiles: true
       );
       expect(simResult, equals(true));
+      */
 
     });
-  });
+}
 
-  group('priority_encoder', () {
-    test('priority_encoder', () async {
-      const n = 15;
+
+void testPriorityEncoder(int n, fn) {
+    test('priority_encoder_$n', () async {
       var inp = Logic(name: 'inp', width: n);
-      final mod = PriorityEncoder(inp);
+      final mod = fn(inp);
       await mod.build();
 
       int computePriorityEncoding(j) {
@@ -82,5 +82,69 @@ void main() {
       }
 
     });
+}
+
+void testAdder(int n, fn) {
+    test('adder_$n', () async {
+      var a = Logic(name: 'a', width: n);
+      var b = Logic(name: 'b', width: n);
+
+      final mod = fn(a, b);
+      await mod.build();
+
+      int computeAdder(aa, bb) {
+        return (aa + bb) & ((1<<n)-1);
+      }
+
+      // put/expect testing
+
+      for (var aa=0; aa < (1<<n); ++aa) {
+        for (var bb=0; bb < (1<<n); ++bb) {
+
+          final golden = computeAdder(aa, bb);
+          a.put(aa);
+          b.put(bb);
+          final result = mod.out.value.toInt();
+          //print("adder: $aa $bb $result $golden");
+          expect(result, equals(golden));
+        }
+      }
+    }); 
+}
+
+void main() {
+  tearDown(Simulator.reset);
+
+
+  group('largest_pow2_less_than', () {
+    test('largest_pow2_less_than', () async {
+      expect(largestPow2LessThan(5), equals(4));
+      expect(largestPow2LessThan(4), equals(2));
+      expect(largestPow2LessThan(3), equals(2));
+    });
+  });
+
+  group('or_scan', () {
+    for (var n in [7,8,9]) {
+      for (var ppGen in [Ripple.new, Sklansky.new]) {
+        testOrScan(n, (inp) => OrScan(inp, ppGen));
+      }
+    }
+  });
+
+  group('priority_encoder', () {
+    for (var n in [7,8,9]) {
+      for (var ppGen in [Ripple.new, Sklansky.new]) {
+        testPriorityEncoder(n, (inp) => PriorityEncoder(inp, ppGen));
+      }
+    }
+  });
+
+  group('adder', () {
+    for (var n in [3,4,5]) {
+      for (var ppGen in [Ripple.new, Sklansky.new]) {
+        testAdder(n, (a, b) => Adder(a, b, ppGen));
+      }
+    }
   });
 }
