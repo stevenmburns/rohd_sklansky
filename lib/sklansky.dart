@@ -94,9 +94,34 @@ class Adder extends Module {
     a = addInput('a', a, width: a.width);
     b = addInput('b', b, width: b.width);
     final u = ppGen(
+        //                                    generate,    propagate or generate
         List<Logic>.generate(a.width, (i) => [a[i] & b[i], a[i] | b[i]].swizzle() ),
         (lhs, rhs) => [rhs[1] | rhs[0] & lhs[1], rhs[0] & lhs[0]].swizzle()
     );
     addOutput('out', width: a.width) <= List<Logic>.generate(a.width, (i) => (i==0) ? a[i] ^ b[i] : a[i]^b[i]^u.val[i-1][1]).rswizzle();
+  }
+}
+
+class Incr extends Module {
+  Logic get out => output('out');
+  Incr(Logic inp, ParallelPrefix Function(List<Logic>, Logic Function(Logic, Logic )) ppGen) {
+    inp = addInput('inp', inp, width: inp.width);
+    final u = ppGen(
+        List<Logic>.generate(inp.width, (i) => inp[i] ),
+        (lhs, rhs) => rhs & lhs
+    );
+    addOutput('out', width: inp.width) <= (List<Logic>.generate(inp.width, (i) => ((i==0) ? ~inp[i] : inp[i]^u.val[i-1])).rswizzle());
+  }
+}
+
+class Decr extends Module {
+  Logic get out => output('out');
+  Decr(Logic inp, ParallelPrefix Function(List<Logic>, Logic Function(Logic, Logic )) ppGen) {
+    inp = addInput('inp', inp, width: inp.width);
+    final u = ppGen(
+        List<Logic>.generate(inp.width, (i) => ~inp[i] ),
+        (lhs, rhs) => rhs & lhs
+    );
+    addOutput('out', width: inp.width) <= (List<Logic>.generate(inp.width, (i) => ((i==0) ? ~inp[i] : inp[i]^u.val[i-1])).rswizzle());
   }
 }
