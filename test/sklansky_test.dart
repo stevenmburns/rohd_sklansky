@@ -223,7 +223,7 @@ void main() {
   });
 
   group('adderRandom', () {
-    for (var n in [257]) {
+    for (var n in [650]) {
       for (var ppGen in [Ripple.new, Sklansky.new]) {
         testAdderRandom(n, 10, (a, b) => Adder(a, b, ppGen));
       }
