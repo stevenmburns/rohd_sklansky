@@ -1,7 +1,9 @@
 import 'package:sklansky/sklansky.dart';
 import 'package:rohd/rohd.dart';
 import 'package:rohd/src/utilities/simcompare.dart';
+import 'dart:math';
 import 'package:test/test.dart';
+
 
 
 void testOrScan(int n, fn) {
@@ -112,6 +114,43 @@ void testAdder(int n, fn) {
     }); 
 }
 
+BigInt genRandomBigInt(int nBits) {
+  BigInt result = BigInt.from(0);
+  while (nBits > 0) {
+    var shaveOff = min(16, nBits);
+    result = (result << shaveOff) + BigInt.from(Random().nextInt(1<<shaveOff));
+    nBits -= shaveOff;
+  }
+  return result;
+}
+
+void testAdderRandom(int n, int nSamples, fn) {
+    test('adder_$n', () async {
+      var a = Logic(name: 'a', width: n);
+      var b = Logic(name: 'b', width: n);
+
+      final mod = fn(a, b);
+      await mod.build();
+
+      BigInt computeAdder(aa, bb) {
+        return (aa + bb) & ((BigInt.from(1)<<n)-BigInt.from(1));
+      }
+      // put/expect testing
+
+      for (var i=0; i<nSamples; ++i) {
+        var aa = genRandomBigInt(n);
+        var bb = genRandomBigInt(n);
+        final golden = computeAdder(aa, bb);
+        a.put(aa);
+        b.put(bb);
+        final result = mod.out.value.toBigInt();
+        print("adder: $aa $bb $result $golden");
+        expect(result, equals(golden));
+      }
+
+    }); 
+}
+
 void main() {
   tearDown(Simulator.reset);
 
@@ -144,6 +183,14 @@ void main() {
     for (var n in [3,4,5]) {
       for (var ppGen in [Ripple.new, Sklansky.new]) {
         testAdder(n, (a, b) => Adder(a, b, ppGen));
+      }
+    }
+  });
+
+    group('adderRandom', () {
+    for (var n in [650]) {
+      for (var ppGen in [Ripple.new, Sklansky.new]) {
+        testAdderRandom(n, 10, (a, b) => Adder(a, b, ppGen));
       }
     }
   });
