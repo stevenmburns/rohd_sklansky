@@ -3,23 +3,12 @@ import 'package:rohd/rohd.dart';
 import 'package:rohd/src/utilities/simcompare.dart';
 import 'package:test/test.dart';
 
-void main() {
-  tearDown(Simulator.reset);
 
+void testOrScan(int n, fn) {
 
-  group('largest_pow2_less_than', () {
-    test('largest_pow2_less_than', () async {
-      expect(largestPow2LessThan(5), equals(4));
-      expect(largestPow2LessThan(4), equals(2));
-      expect(largestPow2LessThan(3), equals(2));
-    });
-  });
-
-  group('or_scan', () {
-    test('or_scan', () async {
-      const n = 9;
+    test('or_scan_$n', () async {
       var inp = Logic(name: 'inp', width: n);
-      final mod = OrScanRipple(inp);
+      final mod = fn(inp);
       await mod.build();
 
 
@@ -62,13 +51,13 @@ void main() {
       expect(simResult, equals(true));
 
     });
-  });
+}
 
-  group('priority_encoder', () {
-    test('priority_encoder', () async {
-      const n = 15;
+
+void testPriorityEncoder(int n, fn) {
+    test('priority_encoder_$n', () async {
       var inp = Logic(name: 'inp', width: n);
-      final mod = PriorityEncoderSklansky(inp);
+      final mod = fn(inp);
       await mod.build();
 
       int computePriorityEncoding(j) {
@@ -91,5 +80,32 @@ void main() {
       }
 
     });
+}
+
+void main() {
+  tearDown(Simulator.reset);
+
+
+  group('largest_pow2_less_than', () {
+    test('largest_pow2_less_than', () async {
+      expect(largestPow2LessThan(5), equals(4));
+      expect(largestPow2LessThan(4), equals(2));
+      expect(largestPow2LessThan(3), equals(2));
+    });
+  });
+
+  group('or_scan', () {
+    testOrScan(9, (inp) => OrScan(inp, Ripple.new));
+    testOrScan(7, (inp) => OrScan(inp, Ripple.new));
+    testOrScan(8, (inp) => OrScan(inp, Ripple.new));
+
+    testOrScan(9, (inp) => OrScan(inp, Sklansky.new));
+    testOrScan(7, (inp) => OrScan(inp, Sklansky.new));
+    testOrScan(8, (inp) => OrScan(inp, Sklansky.new));
+  });
+
+  group('priority_encoder', () {
+    testPriorityEncoder(15, (inp) => PriorityEncoder(inp, Ripple.new));
+    testPriorityEncoder(15, (inp) => PriorityEncoder(inp, Sklansky.new));
   });
 }

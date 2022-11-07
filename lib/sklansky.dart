@@ -66,11 +66,12 @@ class Sklansky extends ParallelPrefix {
   }
 }
 
-class OrScanRipple extends Module {
+
+class OrScan extends Module {
   Logic get out => output('out');
-  OrScanRipple(Logic inp) {
+  OrScan(Logic inp, ParallelPrefix Function(List<Logic>, Logic Function(Logic, Logic )) ppGen) {
     inp = addInput('inp', inp, width: inp.width);
-    final u = Ripple(
+    final u = ppGen(
         List<Logic>.generate(inp.width, (i) => inp[i]),
         (a, b) => a | b
     );
@@ -78,32 +79,11 @@ class OrScanRipple extends Module {
   }
 }
 
-class PriorityEncoderRipple extends Module {
+class PriorityEncoder extends Module {
   Logic get out => output('out');
-  PriorityEncoderRipple(Logic inp) {
+  PriorityEncoder(Logic inp, ParallelPrefix Function(List<Logic>, Logic Function(Logic, Logic )) ppGen) {
     inp = addInput('inp', inp, width: inp.width);
-    final u = OrScanRipple(inp);
-    addOutput('out', width: inp.width) <= (u.out & ~(u.out << Const(1)));
-  }
-}
-
-class OrScanSklansky extends Module {
-  Logic get out => output('out');
-  OrScanSklansky(Logic inp) {
-    inp = addInput('inp', inp, width: inp.width);
-    final u = Sklansky(
-        List<Logic>.generate(inp.width, (i) => inp[i]),
-        (a, b) => a | b
-    );
-    addOutput('out', width: inp.width) <= u.val.rswizzle();
-  }
-}
-
-class PriorityEncoderSklansky extends Module {
-  Logic get out => output('out');
-  PriorityEncoderSklansky(Logic inp) {
-    inp = addInput('inp', inp, width: inp.width);
-    final u = OrScanSklansky(inp);
+    final u = OrScan(inp, ppGen);
     addOutput('out', width: inp.width) <= (u.out & ~(u.out << Const(1)));
   }
 }
