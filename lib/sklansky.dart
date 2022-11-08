@@ -13,7 +13,7 @@ class ParallelPrefix extends Module {
   final List<Logic> _oseq = [];
   List<Logic> get val => _oseq;
 
-  ParallelPrefix(List<Logic> inps, name): super(name: name)  {
+  ParallelPrefix(List<Logic> inps, name) : super(name: name) {
     if (inps.isEmpty) {
       throw Exception("Don't use {name} with an empty sequence");
     }
@@ -21,7 +21,7 @@ class ParallelPrefix extends Module {
 }
 
 class Ripple extends ParallelPrefix {
-  Ripple(List<Logic> inps, op) : super(inps, 'ripple') {
+  Ripple(List<Logic> inps, Logic Function(Logic, Logic) op) : super(inps, 'ripple') {
     final List<Logic> iseq = [];
 
     inps.forEachIndexed((i, el) {
@@ -29,19 +29,18 @@ class Ripple extends ParallelPrefix {
       _oseq.add(addOutput('o$i', width: el.width));
     });
 
-    for (var i=0; i<iseq.length; ++i) {
+    for (var i = 0; i < iseq.length; ++i) {
       if (i == 0) {
         _oseq[i] <= iseq[i];
       } else {
-        _oseq[i] <= op(_oseq[i-1], iseq[i]);
+        _oseq[i] <= op(_oseq[i - 1], iseq[i]);
       }
-
     }
   }
 }
 
 class Sklansky extends ParallelPrefix {
-  Sklansky(List<Logic> inps, op) : super(inps, 'sklansky') {
+  Sklansky(List<Logic> inps, Logic Function(Logic, Logic) op) : super(inps, 'sklansky') {
     final List<Logic> iseq = [];
 
     inps.forEachIndexed((i, el) {
@@ -66,22 +65,87 @@ class Sklansky extends ParallelPrefix {
   }
 }
 
+class KoggeStone extends ParallelPrefix {
+  KoggeStone(List<Logic> inps, Logic Function(Logic, Logic) op) : super(inps, 'kogge_stone') {
+    final List<Logic> iseq = [];
+
+    inps.forEachIndexed((i, el) {
+      iseq.add(addInput('i$i', el, width: el.width));
+      _oseq.add(addOutput('o$i', width: el.width));
+    });
+
+    var skip = 1;
+
+    while (skip < inps.length) {
+      for (var i = inps.length - 1; i >= skip; --i) {
+        iseq[i] = op(iseq[i - skip], iseq[i]);
+      }
+      skip *= 2;
+    }
+
+    iseq.forEachIndexed((i, el) {
+      _oseq[i] <= el;
+    });
+  }
+}
+
+class BrentKung extends ParallelPrefix {
+  BrentKung(List<Logic> inps, Logic Function(Logic, Logic) op) : super(inps, 'brent_kung') {
+    final List<Logic> iseq = [];
+
+    inps.forEachIndexed((i, el) {
+      iseq.add(addInput('i$i', el, width: el.width));
+      _oseq.add(addOutput('o$i', width: el.width));
+    });
+
+    // Reduce phase
+    var skip = 2;
+    while (skip <= inps.length) {
+      for (var i = skip - 1; i < inps.length; i += skip) {
+        iseq[i] = op(iseq[i - skip ~/ 2], iseq[i]);
+      }
+      skip *= 2;
+    }
+
+    // Prefix Phase
+    skip = largestPow2LessThan(inps.length);
+    while (skip > 2) {
+      for (var i = 3 * (skip ~/ 2) - 1; i < inps.length; i += skip) {
+        iseq[i] = op(iseq[i - skip ~/ 2], iseq[i]);
+      }
+      skip ~/= 2;
+    }
+
+    // Final row
+    for (var i = 2; i < inps.length; i += 2) {
+      iseq[i] = op(iseq[i-1], iseq[i]);
+    }
+
+    iseq.forEachIndexed((i, el) {
+      _oseq[i] <= el;
+    });
+  }
+}
 
 class OrScan extends Module {
   Logic get out => output('out');
-  OrScan(Logic inp, ParallelPrefix Function(List<Logic>, Logic Function(Logic, Logic )) ppGen) {
+  OrScan(
+      Logic inp,
+      ParallelPrefix Function(List<Logic>, Logic Function(Logic, Logic))
+          ppGen) {
     inp = addInput('inp', inp, width: inp.width);
-    final u = ppGen(
-        List<Logic>.generate(inp.width, (i) => inp[i]),
-        (a, b) => a | b
-    );
+    final u =
+        ppGen(List<Logic>.generate(inp.width, (i) => inp[i]), (a, b) => a | b);
     addOutput('out', width: inp.width) <= u.val.rswizzle();
   }
 }
 
 class PriorityEncoder extends Module {
   Logic get out => output('out');
-  PriorityEncoder(Logic inp, ParallelPrefix Function(List<Logic>, Logic Function(Logic, Logic )) ppGen) {
+  PriorityEncoder(
+      Logic inp,
+      ParallelPrefix Function(List<Logic>, Logic Function(Logic, Logic))
+          ppGen) {
     inp = addInput('inp', inp, width: inp.width);
     final u = OrScan(inp, ppGen);
     addOutput('out', width: inp.width) <= (u.out & ~(u.out << Const(1)));
@@ -90,38 +154,53 @@ class PriorityEncoder extends Module {
 
 class Adder extends Module {
   Logic get out => output('out');
-  Adder(Logic a, Logic b, ParallelPrefix Function(List<Logic>, Logic Function(Logic, Logic )) ppGen) {
+  Adder(
+      Logic a,
+      Logic b,
+      ParallelPrefix Function(List<Logic>, Logic Function(Logic, Logic))
+          ppGen) {
     a = addInput('a', a, width: a.width);
     b = addInput('b', b, width: b.width);
     final u = ppGen(
         //                                    generate,    propagate or generate
-        List<Logic>.generate(a.width, (i) => [a[i] & b[i], a[i] | b[i]].swizzle() ),
-        (lhs, rhs) => [rhs[1] | rhs[0] & lhs[1], rhs[0] & lhs[0]].swizzle()
-    );
-    addOutput('out', width: a.width) <= List<Logic>.generate(a.width, (i) => (i==0) ? a[i] ^ b[i] : a[i]^b[i]^u.val[i-1][1]).rswizzle();
+        List<Logic>.generate(
+            a.width, (i) => [a[i] & b[i], a[i] | b[i]].swizzle()),
+        (lhs, rhs) => [rhs[1] | rhs[0] & lhs[1], rhs[0] & lhs[0]].swizzle());
+    addOutput('out', width: a.width) <=
+        List<Logic>.generate(a.width,
+                (i) => (i == 0) ? a[i] ^ b[i] : a[i] ^ b[i] ^ u.val[i - 1][1])
+            .rswizzle();
   }
 }
 
 class Incr extends Module {
   Logic get out => output('out');
-  Incr(Logic inp, ParallelPrefix Function(List<Logic>, Logic Function(Logic, Logic )) ppGen) {
+  Incr(
+      Logic inp,
+      ParallelPrefix Function(List<Logic>, Logic Function(Logic, Logic))
+          ppGen) {
     inp = addInput('inp', inp, width: inp.width);
-    final u = ppGen(
-        List<Logic>.generate(inp.width, (i) => inp[i] ),
-        (lhs, rhs) => rhs & lhs
-    );
-    addOutput('out', width: inp.width) <= (List<Logic>.generate(inp.width, (i) => ((i==0) ? ~inp[i] : inp[i]^u.val[i-1])).rswizzle());
+    final u = ppGen(List<Logic>.generate(inp.width, (i) => inp[i]),
+        (lhs, rhs) => rhs & lhs);
+    addOutput('out', width: inp.width) <=
+        (List<Logic>.generate(
+                inp.width, (i) => ((i == 0) ? ~inp[i] : inp[i] ^ u.val[i - 1]))
+            .rswizzle());
   }
 }
 
 class Decr extends Module {
   Logic get out => output('out');
-  Decr(Logic inp, ParallelPrefix Function(List<Logic>, Logic Function(Logic, Logic )) ppGen) {
+  Decr(
+      Logic inp,
+      ParallelPrefix Function(List<Logic>, Logic Function(Logic, Logic))
+          ppGen) {
     inp = addInput('inp', inp, width: inp.width);
-    final u = ppGen(
-        List<Logic>.generate(inp.width, (i) => ~inp[i] ),
-        (lhs, rhs) => rhs & lhs
-    );
-    addOutput('out', width: inp.width) <= (List<Logic>.generate(inp.width, (i) => ((i==0) ? ~inp[i] : inp[i]^u.val[i-1])).rswizzle());
+    final u = ppGen(List<Logic>.generate(inp.width, (i) => ~inp[i]),
+        (lhs, rhs) => rhs & lhs);
+    addOutput('out', width: inp.width) <=
+        (List<Logic>.generate(
+                inp.width, (i) => ((i == 0) ? ~inp[i] : inp[i] ^ u.val[i - 1]))
+            .rswizzle());
   }
 }

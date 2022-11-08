@@ -103,6 +103,26 @@ void testAdder(int n, fn) {
         expect(result, equals(golden));
       }
     }
+
+    WaveDumper(mod);
+
+    // SimCompare testing
+    final List<Vector> vectors = [];
+    for (var aa = 0; aa < (1 << n); ++aa) {
+      for (var bb = 0; bb < (1 << n); ++bb) {
+        final golden = computeAdder(aa, bb);
+        vectors.add(Vector({'a': aa, 'b': bb}, {'out': golden}));
+      }
+    }
+
+    await SimCompare.checkFunctionalVector(mod, vectors);
+      
+    final simResult = SimCompare.iverilogVector(
+      mod.generateSynth(), '${mod.runtimeType}', vectors,
+      signalToWidthMap: {'a': n, 'b': n, 'out': n},
+      dontDeleteTmpFiles: true
+    );
+    expect(simResult, equals(true));
   });
 }
 
@@ -140,6 +160,10 @@ void testAdderRandom(int n, int nSamples, fn) {
       //print("adder: ${aa.toRadixString(16)} ${bb.toRadixString(16)} ${result.toRadixString(16)} ${golden.toRadixString(16)}");
       expect(result, equals(golden));
     }
+
+      
+
+      
   });
 }
 
@@ -198,9 +222,11 @@ void main() {
     });
   });
 
+  final generators = [Ripple.new, Sklansky.new, KoggeStone.new, BrentKung.new];
+
   group('or_scan', () {
     for (var n in [7, 8, 9]) {
-      for (var ppGen in [Ripple.new, Sklansky.new]) {
+      for (var ppGen in generators) {
         testOrScan(n, (inp) => OrScan(inp, ppGen));
       }
     }
@@ -208,7 +234,7 @@ void main() {
 
   group('priority_encoder', () {
     for (var n in [7, 8, 9]) {
-      for (var ppGen in [Ripple.new, Sklansky.new]) {
+      for (var ppGen in generators) {
         testPriorityEncoder(n, (inp) => PriorityEncoder(inp, ppGen));
       }
     }
@@ -216,15 +242,15 @@ void main() {
 
   group('adder', () {
     for (var n in [3, 4, 5]) {
-      for (var ppGen in [Ripple.new, Sklansky.new]) {
+      for (var ppGen in generators) {
         testAdder(n, (a, b) => Adder(a, b, ppGen));
       }
     }
   });
 
   group('adderRandom', () {
-    for (var n in [257]) {
-      for (var ppGen in [Ripple.new, Sklansky.new]) {
+    for (var n in [127,128,129]) {
+      for (var ppGen in generators) {
         testAdderRandom(n, 10, (a, b) => Adder(a, b, ppGen));
       }
     }
@@ -232,7 +258,7 @@ void main() {
 
   group('incr', () {
     for (var n in [7, 8, 9]) {
-      for (var ppGen in [Ripple.new, Sklansky.new]) {
+      for (var ppGen in generators) {
         testIncr(n, (inp) => Incr(inp, ppGen));
       }
     }
@@ -240,7 +266,7 @@ void main() {
 
   group('decr', () {
     for (var n in [7, 8, 9]) {
-      for (var ppGen in [Ripple.new, Sklansky.new]) {
+      for (var ppGen in generators) {
         testDecr(n, (inp) => Decr(inp, ppGen));
       }
     }
