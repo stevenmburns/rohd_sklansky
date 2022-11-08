@@ -21,7 +21,7 @@ class ParallelPrefix extends Module {
 }
 
 class Ripple extends ParallelPrefix {
-  Ripple(List<Logic> inps, op) : super(inps, 'ripple') {
+  Ripple(List<Logic> inps, Logic Function(Logic, Logic) op) : super(inps, 'ripple') {
     final List<Logic> iseq = [];
 
     inps.forEachIndexed((i, el) {
@@ -40,7 +40,7 @@ class Ripple extends ParallelPrefix {
 }
 
 class Sklansky extends ParallelPrefix {
-  Sklansky(List<Logic> inps, op) : super(inps, 'sklansky') {
+  Sklansky(List<Logic> inps, Logic Function(Logic, Logic) op) : super(inps, 'sklansky') {
     final List<Logic> iseq = [];
 
     inps.forEachIndexed((i, el) {
@@ -66,7 +66,7 @@ class Sklansky extends ParallelPrefix {
 }
 
 class KoggeStone extends ParallelPrefix {
-  KoggeStone(List<Logic> inps, op) : super(inps, 'kogge_stone') {
+  KoggeStone(List<Logic> inps, Logic Function(Logic, Logic) op) : super(inps, 'kogge_stone') {
     final List<Logic> iseq = [];
 
     inps.forEachIndexed((i, el) {
@@ -77,12 +77,8 @@ class KoggeStone extends ParallelPrefix {
     var skip = 1;
 
     while (skip < inps.length) {
-      for (var i = inps.length - 1; i >= 0; --i) {
-        if (i - skip >= 0) {
-          var tmp = Logic(width: iseq[i].width);
-          tmp <= op(iseq[i - skip], iseq[i]);
-          iseq[i] = tmp;
-        }
+      for (var i = inps.length - 1; i >= skip; --i) {
+        iseq[i] = op(iseq[i - skip], iseq[i]);
       }
       skip *= 2;
     }
@@ -94,7 +90,7 @@ class KoggeStone extends ParallelPrefix {
 }
 
 class BrentKung extends ParallelPrefix {
-  BrentKung(List<Logic> inps, op) : super(inps, 'brent_kung') {
+  BrentKung(List<Logic> inps, Logic Function(Logic, Logic) op) : super(inps, 'brent_kung') {
     final List<Logic> iseq = [];
 
     inps.forEachIndexed((i, el) {
@@ -106,10 +102,7 @@ class BrentKung extends ParallelPrefix {
     var skip = 2;
     while (skip <= inps.length) {
       for (var i = skip - 1; i < inps.length; i += skip) {
-        var l = i - skip ~/ 2;
-        var tmp = Logic(width: iseq[i].width);
-        tmp <= op(iseq[l], iseq[i]);
-        iseq[i] = tmp;
+        iseq[i] = op(iseq[i - skip ~/ 2], iseq[i]);
       }
       skip *= 2;
     }
@@ -118,20 +111,14 @@ class BrentKung extends ParallelPrefix {
     skip = largestPow2LessThan(inps.length);
     while (skip > 2) {
       for (var i = 3 * (skip ~/ 2) - 1; i < inps.length; i += skip) {
-        var l = i - skip ~/ 2;
-        var tmp = Logic(width: iseq[i].width);
-        tmp <= op(iseq[l], iseq[i]);
-        iseq[i] = tmp;
+        iseq[i] = op(iseq[i - skip ~/ 2], iseq[i]);
       }
       skip ~/= 2;
     }
-    
+
     // Final row
     for (var i = 2; i < inps.length; i += 2) {
-      var l = i - 1;
-      var tmp = Logic(width: iseq[i].width);
-      tmp <= op(iseq[l], iseq[i]);
-      iseq[i] = tmp;
+      iseq[i] = op(iseq[i-1], iseq[i]);
     }
 
     iseq.forEachIndexed((i, el) {
