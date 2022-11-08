@@ -17,7 +17,7 @@ Future<void> main({bool noPrint = false}) async {
   final Logic a = Logic(name: 'a', width: 9);
   final Logic b = Logic(name: 'b', width: 9);
 
-  final block = Adder(a, b, Sklansky.new);
+  final block = Adder(a, b, KoggeStone.new);
   await block.build();
   final generatedSystemVerilog = block.generateSynth();
   if (!noPrint) {
