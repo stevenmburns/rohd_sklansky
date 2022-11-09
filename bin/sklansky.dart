@@ -14,10 +14,11 @@ import 'package:rohd/rohd.dart';
 import 'package:sklansky/sklansky.dart';
 
 Future<void> main({bool noPrint = false}) async {
-  final Logic a = Logic(name: 'a', width: 9);
-  final Logic b = Logic(name: 'b', width: 9);
+  const n = 256;
+  final Logic a = Logic(name: 'a', width: n);
+  final Logic b = Logic(name: 'b', width: n);
 
-  final block = Adder(a, b, KoggeStone.new);
+  final block = Adder(a, b, Sklansky.new);
   await block.build();
   final generatedSystemVerilog = block.generateSynth();
   if (!noPrint) {
