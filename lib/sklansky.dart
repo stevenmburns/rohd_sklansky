@@ -127,6 +127,44 @@ class BrentKung extends ParallelPrefix {
   }
 }
 
+class HanCarlson extends ParallelPrefix {
+  // k = 1
+  HanCarlson(List<Logic> inps, Logic Function(Logic, Logic) op) : super(inps, 'brent_kung') {
+    final List<Logic> iseq = [];
+
+    inps.forEachIndexed((i, el) {
+      iseq.add(addInput('i$i', el, width: el.width));
+      _oseq.add(addOutput('o$i', width: el.width));
+    });
+
+    // First row
+    var skip = 2;
+    for (var i = skip - 1; i < inps.length; i += skip) {
+      iseq[i] = op(iseq[i - skip ~/ 2], iseq[i]);
+    }
+
+    while (skip < inps.length) {
+      var last_odd = inps.length - 1;
+      if (last_odd % 2 == 0) {
+        --last_odd;
+      }
+      for (var i = last_odd; i >= skip; i -= 2) {
+        iseq[i] = op(iseq[i - skip], iseq[i]);
+      }
+      skip *= 2;
+    }
+
+    // Final row
+    for (var i = 2; i < inps.length; i += 2) {
+      iseq[i] = op(iseq[i-1], iseq[i]);
+    }
+
+    iseq.forEachIndexed((i, el) {
+      _oseq[i] <= el;
+    });
+  }
+}
+
 class OrScan extends Module {
   Logic get out => output('out');
   OrScan(

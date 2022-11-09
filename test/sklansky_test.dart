@@ -116,12 +116,10 @@ void testAdder(int n, fn) {
     }
 
     await SimCompare.checkFunctionalVector(mod, vectors);
-      
+
     final simResult = SimCompare.iverilogVector(
-      mod.generateSynth(), '${mod.runtimeType}', vectors,
-      signalToWidthMap: {'a': n, 'b': n, 'out': n},
-      dontDeleteTmpFiles: true
-    );
+        mod.generateSynth(), '${mod.runtimeType}', vectors,
+        signalToWidthMap: {'a': n, 'b': n, 'out': n}, dontDeleteTmpFiles: true);
     expect(simResult, equals(true));
   });
 }
@@ -160,10 +158,6 @@ void testAdderRandom(int n, int nSamples, fn) {
       //print("adder: ${aa.toRadixString(16)} ${bb.toRadixString(16)} ${result.toRadixString(16)} ${golden.toRadixString(16)}");
       expect(result, equals(golden));
     }
-
-      
-
-      
   });
 }
 
@@ -222,7 +216,13 @@ void main() {
     });
   });
 
-  final generators = [Ripple.new, Sklansky.new, KoggeStone.new, BrentKung.new];
+  final generators = [
+    Ripple.new,
+    Sklansky.new,
+    KoggeStone.new,
+    BrentKung.new,
+    HanCarlson.new
+  ];
 
   group('or_scan', () {
     for (var n in [7, 8, 9]) {
@@ -249,7 +249,7 @@ void main() {
   });
 
   group('adderRandom', () {
-    for (var n in [127,128,129]) {
+    for (var n in [127, 128, 129]) {
       for (var ppGen in generators) {
         testAdderRandom(n, 10, (a, b) => Adder(a, b, ppGen));
       }
